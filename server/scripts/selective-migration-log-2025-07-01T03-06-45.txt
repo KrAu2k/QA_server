@@ -1,0 +1,7 @@
+[2025-07-01T03:06:45.090Z] 🚀 Starting selective database migration...
+[2025-07-01T03:06:45.091Z] Source: ranci@8.135.6.60:3307
+[2025-07-01T03:06:45.091Z] Target: report@8.135.6.60:3307
+[2025-07-01T03:06:45.091Z] 🎯 Using table whitelist with 20 tables
+[2025-07-01T03:06:45.199Z] ❌ Connection failed: Access denied for user 'ranci01'@'%' to database 'report'
+[2025-07-01T03:06:45.200Z] 💥 Migration failed: Access denied for user 'ranci01'@'%' to database 'report'
+[2025-07-01T03:06:45.201Z] 🔌 Disconnected from source database

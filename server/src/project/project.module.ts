@@ -1,0 +1,28 @@
+import { Module, forwardRef } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { ProjectService } from './project.service';
+import { ProjectController } from './project.controller';
+import { ProjectGateway } from './project.gateway';
+import { Project } from './entities/project.entity';
+import { ProjectUpdateLog } from './entities/project-update-log.entity';
+import { ProjectUpdateCodeLog } from './entities/project-update-code-log.entity';
+import { LogModule } from '../log/log.module';
+
+@Module({
+  imports: [
+    TypeOrmModule.forFeature([Project, ProjectUpdateLog, ProjectUpdateCodeLog]),
+    LogModule
+  ],
+  controllers: [ProjectController],
+  providers: [
+    ProjectService, 
+    ProjectGateway,
+    {
+      provide: 'ProjectGateway',
+      useFactory: (gateway: ProjectGateway) => gateway,
+      inject: [ProjectGateway],
+    }
+  ],
+  exports: [ProjectService]
+})
+export class ProjectModule {}

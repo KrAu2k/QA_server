@@ -1,0 +1,175 @@
+[2025-07-01T07:15:01.845Z] 🚀 Starting selective database migration...
+[2025-07-01T07:15:01.846Z] Source: ranci@8.135.6.60:3307
+[2025-07-01T07:15:01.846Z] Target: report@8.135.6.60:3307
+[2025-07-01T07:15:01.846Z] 🎯 Using table whitelist with 20 tables
+[2025-07-01T07:15:01.892Z] 🔗 Connected to MySQL server for database creation
+[2025-07-01T07:15:01.921Z] ✅ Target database 'report' is ready
+[2025-07-01T07:15:01.961Z] 🔗 Connected to source database: ranci
+[2025-07-01T07:15:02.009Z] 🔗 Connected to target database: report
+[2025-07-01T07:15:02.036Z] ✅ Source database access verified
+[2025-07-01T07:15:02.063Z] ✅ Target database access verified
+[2025-07-01T07:15:02.153Z] ✅ Create/drop table permissions verified
+[2025-07-01T07:15:02.182Z] ⚠️  警告：白名单中以下表在源数据库中不存在：report_data
+[2025-07-01T07:15:02.183Z] 📋 源数据库共有 42 个表
+[2025-07-01T07:15:02.183Z] ✅ 将迁移 19 个表
+[2025-07-01T07:15:02.184Z] ⏭️  跳过 23 个表
+[2025-07-01T07:15:02.184Z] 跳过的表：django_migrations (不在白名单中), auth_group_permissions (不在白名单中), auth_user_groups (不在白名单中), auth_user_user_permissions (不在白名单中), django_admin_log (不在白名单中), django_content_type (不在白名单中), auth_permission (不在白名单中), auth_group (不在白名单中), auth_user (不在白名单中), django_session (不在白名单中), report (不在白名单中), report_log (不在白名单中), user_info (不在白名单中), food (不在白名单中), upgrade (不在白名单中), cook_area_configs (不在白名单中), foodgroup (不在白名单中), level (不在白名单中), departments_closure (不在白名单中), purchase_order_details (不在白名单中), purchase_order (不在白名单中), company (不在白名单中), company_user (不在白名单中)
+[2025-07-01T07:15:02.207Z] 🔧 Disabled foreign key checks for migration
+[2025-07-01T07:15:02.208Z] 🔄 Starting migration for table: supplier_category
+[2025-07-01T07:15:02.390Z] ✅ Created table: supplier_category
+[2025-07-01T07:15:02.454Z] 📊 Migrating 14 rows from table supplier_category...
+[2025-07-01T07:15:02.767Z] 📈 Progress for supplier_category: 14/14 (100.0%)
+[2025-07-01T07:15:02.767Z] ✅ Successfully migrated 14 rows to table supplier_category
+[2025-07-01T07:15:02.810Z] ✅ Verification passed for supplier_category: 14 rows
+[2025-07-01T07:15:02.811Z] 🎯 Completed supplier_category (1/19, 5.3%)
+[2025-07-01T07:15:02.811Z] ──────────────────────────────────────────────────
+[2025-07-01T07:15:02.811Z] 🔄 Starting migration for table: supplier
+[2025-07-01T07:15:02.919Z] ✅ Created table: supplier
+[2025-07-01T07:15:02.946Z] 📊 Migrating 201 rows from table supplier...
+[2025-07-01T07:15:06.203Z] 📈 Progress for supplier: 201/201 (100.0%)
+[2025-07-01T07:15:06.204Z] ✅ Successfully migrated 201 rows to table supplier
+[2025-07-01T07:15:06.241Z] ✅ Verification passed for supplier: 201 rows
+[2025-07-01T07:15:06.241Z] 🎯 Completed supplier (2/19, 10.5%)
+[2025-07-01T07:15:06.241Z] ──────────────────────────────────────────────────
+[2025-07-01T07:15:06.242Z] 🔄 Starting migration for table: customer_category
+[2025-07-01T07:15:06.347Z] ✅ Created table: customer_category
+[2025-07-01T07:15:06.373Z] 📊 Migrating 8 rows from table customer_category...
+[2025-07-01T07:15:06.555Z] 📈 Progress for customer_category: 8/8 (100.0%)
+[2025-07-01T07:15:06.555Z] ✅ Successfully migrated 8 rows to table customer_category
+[2025-07-01T07:15:06.602Z] ✅ Verification passed for customer_category: 8 rows
+[2025-07-01T07:15:06.603Z] 🎯 Completed customer_category (3/19, 15.8%)
+[2025-07-01T07:15:06.603Z] ──────────────────────────────────────────────────
+[2025-07-01T07:15:06.604Z] 🔄 Starting migration for table: customer
+[2025-07-01T07:15:06.713Z] ✅ Created table: customer
+[2025-07-01T07:15:06.744Z] 📊 Migrating 601 rows from table customer...
+[2025-07-01T07:15:18.278Z] 📈 Progress for customer: 601/601 (100.0%)
+[2025-07-01T07:15:18.278Z] ✅ Successfully migrated 601 rows to table customer
+[2025-07-01T07:15:18.317Z] ✅ Verification passed for customer: 601 rows
+[2025-07-01T07:15:18.318Z] 🎯 Completed customer (4/19, 21.1%)
+[2025-07-01T07:15:18.318Z] ──────────────────────────────────────────────────
+[2025-07-01T07:15:18.318Z] 🔄 Starting migration for table: goods_category
+[2025-07-01T07:15:18.426Z] ✅ Created table: goods_category
+[2025-07-01T07:15:18.457Z] 📊 Migrating 5 rows from table goods_category...
+[2025-07-01T07:15:18.596Z] 📈 Progress for goods_category: 5/5 (100.0%)
+[2025-07-01T07:15:18.596Z] ✅ Successfully migrated 5 rows to table goods_category
+[2025-07-01T07:15:18.633Z] ✅ Verification passed for goods_category: 5 rows
+[2025-07-01T07:15:18.633Z] 🎯 Completed goods_category (5/19, 26.3%)
+[2025-07-01T07:15:18.634Z] ──────────────────────────────────────────────────
+[2025-07-01T07:15:18.634Z] 🔄 Starting migration for table: goods
+[2025-07-01T07:15:18.749Z] ✅ Created table: goods
+[2025-07-01T07:15:18.776Z] 📊 Migrating 543 rows from table goods...
+[2025-07-01T07:15:28.853Z] 📈 Progress for goods: 543/543 (100.0%)
+[2025-07-01T07:15:28.854Z] ✅ Successfully migrated 543 rows to table goods
+[2025-07-01T07:15:28.892Z] ✅ Verification passed for goods: 543 rows
+[2025-07-01T07:15:28.893Z] 🎯 Completed goods (6/19, 31.6%)
+[2025-07-01T07:15:28.893Z] ──────────────────────────────────────────────────
+[2025-07-01T07:15:28.893Z] 🔄 Starting migration for table: user
+[2025-07-01T07:15:29.009Z] ✅ Created table: user
+[2025-07-01T07:15:29.033Z] 📊 Migrating 8 rows from table user...
+[2025-07-01T07:15:29.196Z] 📈 Progress for user: 8/8 (100.0%)
+[2025-07-01T07:15:29.197Z] ✅ Successfully migrated 8 rows to table user
+[2025-07-01T07:15:29.235Z] ✅ Verification passed for user: 8 rows
+[2025-07-01T07:15:29.236Z] 🎯 Completed user (7/19, 36.8%)
+[2025-07-01T07:15:29.236Z] ──────────────────────────────────────────────────
+[2025-07-01T07:15:29.236Z] 🔄 Starting migration for table: sales_quote_details
+[2025-07-01T07:15:29.343Z] ✅ Created table: sales_quote_details
+[2025-07-01T07:15:29.368Z] 📊 Migrating 2 rows from table sales_quote_details...
+[2025-07-01T07:15:29.438Z] 📈 Progress for sales_quote_details: 2/2 (100.0%)
+[2025-07-01T07:15:29.438Z] ✅ Successfully migrated 2 rows to table sales_quote_details
+[2025-07-01T07:15:29.476Z] ✅ Verification passed for sales_quote_details: 2 rows
+[2025-07-01T07:15:29.476Z] 🎯 Completed sales_quote_details (8/19, 42.1%)
+[2025-07-01T07:15:29.477Z] ──────────────────────────────────────────────────
+[2025-07-01T07:15:29.477Z] 🔄 Starting migration for table: sales_delivery_details
+[2025-07-01T07:15:29.587Z] ✅ Created table: sales_delivery_details
+[2025-07-01T07:15:29.612Z] ⚪ Table sales_delivery_details is empty, skipping data migration
+[2025-07-01T07:15:29.650Z] ✅ Verification passed for sales_delivery_details: 0 rows
+[2025-07-01T07:15:29.651Z] 🎯 Completed sales_delivery_details (9/19, 47.4%)
+[2025-07-01T07:15:29.651Z] ──────────────────────────────────────────────────
+[2025-07-01T07:15:29.651Z] 🔄 Starting migration for table: sales_quotes
+[2025-07-01T07:15:29.780Z] ✅ Created table: sales_quotes
+[2025-07-01T07:15:29.806Z] 📊 Migrating 2 rows from table sales_quotes...
+[2025-07-01T07:15:29.881Z] 📈 Progress for sales_quotes: 2/2 (100.0%)
+[2025-07-01T07:15:29.882Z] ✅ Successfully migrated 2 rows to table sales_quotes
+[2025-07-01T07:15:29.917Z] ✅ Verification passed for sales_quotes: 2 rows
+[2025-07-01T07:15:29.917Z] 🎯 Completed sales_quotes (10/19, 52.6%)
+[2025-07-01T07:15:29.917Z] ──────────────────────────────────────────────────
+[2025-07-01T07:15:29.917Z] 🔄 Starting migration for table: sales_deliveries
+[2025-07-01T07:15:30.051Z] ✅ Created table: sales_deliveries
+[2025-07-01T07:15:30.076Z] ⚪ Table sales_deliveries is empty, skipping data migration
+[2025-07-01T07:15:30.113Z] ✅ Verification passed for sales_deliveries: 0 rows
+[2025-07-01T07:15:30.114Z] 🎯 Completed sales_deliveries (11/19, 57.9%)
+[2025-07-01T07:15:30.114Z] ──────────────────────────────────────────────────
+[2025-07-01T07:15:30.114Z] 🔄 Starting migration for table: purchase_stock_in_details
+[2025-07-01T07:15:30.226Z] ✅ Created table: purchase_stock_in_details
+[2025-07-01T07:15:30.253Z] 📊 Migrating 300 rows from table purchase_stock_in_details...
+[2025-07-01T07:15:35.056Z] 📈 Progress for purchase_stock_in_details: 300/300 (100.0%)
+[2025-07-01T07:15:35.057Z] ✅ Successfully migrated 300 rows to table purchase_stock_in_details
+[2025-07-01T07:15:35.115Z] ✅ Verification passed for purchase_stock_in_details: 300 rows
+[2025-07-01T07:15:35.116Z] 🎯 Completed purchase_stock_in_details (12/19, 63.2%)
+[2025-07-01T07:15:35.116Z] ──────────────────────────────────────────────────
+[2025-07-01T07:15:35.117Z] 🔄 Starting migration for table: purchase_stock_in
+[2025-07-01T07:15:35.259Z] ✅ Created table: purchase_stock_in
+[2025-07-01T07:15:35.297Z] 📊 Migrating 60 rows from table purchase_stock_in...
+[2025-07-01T07:15:37.986Z] 📈 Progress for purchase_stock_in: 60/60 (100.0%)
+[2025-07-01T07:15:37.987Z] ✅ Successfully migrated 60 rows to table purchase_stock_in
+[2025-07-01T07:15:38.023Z] ✅ Verification passed for purchase_stock_in: 60 rows
+[2025-07-01T07:15:38.024Z] 🎯 Completed purchase_stock_in (13/19, 68.4%)
+[2025-07-01T07:15:38.024Z] ──────────────────────────────────────────────────
+[2025-07-01T07:15:38.024Z] 🔄 Starting migration for table: purchase_return_details
+[2025-07-01T07:15:38.130Z] ✅ Created table: purchase_return_details
+[2025-07-01T07:15:38.159Z] 📊 Migrating 240 rows from table purchase_return_details...
+[2025-07-01T07:15:42.064Z] 📈 Progress for purchase_return_details: 240/240 (100.0%)
+[2025-07-01T07:15:42.065Z] ✅ Successfully migrated 240 rows to table purchase_return_details
+[2025-07-01T07:15:42.101Z] ✅ Verification passed for purchase_return_details: 240 rows
+[2025-07-01T07:15:42.102Z] 🎯 Completed purchase_return_details (14/19, 73.7%)
+[2025-07-01T07:15:42.102Z] ──────────────────────────────────────────────────
+[2025-07-01T07:15:42.102Z] 🔄 Starting migration for table: purchase_return
+[2025-07-01T07:15:42.213Z] ✅ Created table: purchase_return
+[2025-07-01T07:15:42.238Z] 📊 Migrating 60 rows from table purchase_return...
+[2025-07-01T07:15:43.228Z] 📈 Progress for purchase_return: 60/60 (100.0%)
+[2025-07-01T07:15:43.228Z] ✅ Successfully migrated 60 rows to table purchase_return
+[2025-07-01T07:15:43.264Z] ✅ Verification passed for purchase_return: 60 rows
+[2025-07-01T07:15:43.265Z] 🎯 Completed purchase_return (15/19, 78.9%)
+[2025-07-01T07:15:43.265Z] ──────────────────────────────────────────────────
+[2025-07-01T07:15:43.265Z] 🔄 Starting migration for table: departments
+[2025-07-01T07:15:43.381Z] ✅ Created table: departments
+[2025-07-01T07:15:43.404Z] 📊 Migrating 15 rows from table departments...
+[2025-07-01T07:15:43.669Z] 📈 Progress for departments: 15/15 (100.0%)
+[2025-07-01T07:15:43.670Z] ✅ Successfully migrated 15 rows to table departments
+[2025-07-01T07:15:43.705Z] ✅ Verification passed for departments: 15 rows
+[2025-07-01T07:15:43.706Z] 🎯 Completed departments (16/19, 84.2%)
+[2025-07-01T07:15:43.706Z] ──────────────────────────────────────────────────
+[2025-07-01T07:15:43.706Z] 🔄 Starting migration for table: logs
+[2025-07-01T07:15:43.817Z] ✅ Created table: logs
+[2025-07-01T07:15:43.818Z] ⚪ Table logs is structure-only, skipping data migration
+[2025-07-01T07:15:43.867Z] ✅ Verification passed for logs: structure-only table (0 rows as expected)
+[2025-07-01T07:15:43.868Z] 🎯 Completed logs (17/19, 89.5%)
+[2025-07-01T07:15:43.868Z] ──────────────────────────────────────────────────
+[2025-07-01T07:15:43.868Z] 🔄 Starting migration for table: sell_order_details
+[2025-07-01T07:15:43.980Z] ✅ Created table: sell_order_details
+[2025-07-01T07:15:44.006Z] 📊 Migrating 4 rows from table sell_order_details...
+[2025-07-01T07:15:44.110Z] 📈 Progress for sell_order_details: 4/4 (100.0%)
+[2025-07-01T07:15:44.110Z] ✅ Successfully migrated 4 rows to table sell_order_details
+[2025-07-01T07:15:44.146Z] ✅ Verification passed for sell_order_details: 4 rows
+[2025-07-01T07:15:44.146Z] 🎯 Completed sell_order_details (18/19, 94.7%)
+[2025-07-01T07:15:44.147Z] ──────────────────────────────────────────────────
+[2025-07-01T07:15:44.148Z] 🔄 Starting migration for table: sell_order
+[2025-07-01T07:15:44.266Z] ✅ Created table: sell_order
+[2025-07-01T07:15:44.292Z] 📊 Migrating 6 rows from table sell_order...
+[2025-07-01T07:15:44.422Z] 📈 Progress for sell_order: 6/6 (100.0%)
+[2025-07-01T07:15:44.422Z] ✅ Successfully migrated 6 rows to table sell_order
+[2025-07-01T07:15:44.459Z] ✅ Verification passed for sell_order: 6 rows
+[2025-07-01T07:15:44.459Z] 🎯 Completed sell_order (19/19, 100.0%)
+[2025-07-01T07:15:44.459Z] ──────────────────────────────────────────────────
+[2025-07-01T07:15:44.483Z] 🔧 Re-enabled foreign key checks
+[2025-07-01T07:15:44.483Z] ============================================================
+[2025-07-01T07:15:44.484Z] 📊 MIGRATION SUMMARY
+[2025-07-01T07:15:44.484Z] ============================================================
+[2025-07-01T07:15:44.484Z] ✅ Successfully migrated: 19 tables
+[2025-07-01T07:15:44.484Z] ❌ Failed migrations: 0 tables
+[2025-07-01T07:15:44.485Z] ⏭️  Skipped tables: 23 tables
+[2025-07-01T07:15:44.485Z] ⏱️  Total duration: 42.64 seconds
+[2025-07-01T07:15:44.485Z] 📄 Log file: /Users/StingZZ/CODE/jserptest/myserver/scripts/selective-migration-log-2025-07-01T07-15-01.txt
+[2025-07-01T07:15:44.485Z] 🎉 All migrations completed successfully!
+[2025-07-01T07:15:44.486Z] 🔌 Disconnected from source database
+[2025-07-01T07:15:44.486Z] 🔌 Disconnected from target database

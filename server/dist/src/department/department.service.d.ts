@@ -1,0 +1,32 @@
+import { Repository, TreeRepository } from 'typeorm';
+import { Department } from './entities/department.entity';
+import { User } from '../user/entities/user.entity';
+import { CreateDepartmentDto } from './dto/create-department.dto';
+import { UpdateDepartmentDto } from './dto/update-department.dto';
+import { MoveDepartmentDto, AddMemberDto, SetManagerDto } from './dto/department-operation.dto';
+export declare class DepartmentService {
+    private departmentRepository;
+    private userRepository;
+    private readonly logger;
+    constructor(departmentRepository: TreeRepository<Department>, userRepository: Repository<User>);
+    findTree(): Promise<Department[]>;
+    findOne(id: number): Promise<Department>;
+    create(createDepartmentDto: CreateDepartmentDto): Promise<Department>;
+    update(id: number, updateDepartmentDto: UpdateDepartmentDto): Promise<Department>;
+    remove(id: number): Promise<void>;
+    updateStatus(id: number, status: number): Promise<Department>;
+    moveDepartment(id: number, moveDepartmentDto: MoveDepartmentDto): Promise<Department>;
+    getAvailableUsers(departmentId: number): Promise<any[]>;
+    getDepartmentMembers(id: number): Promise<any[]>;
+    addMembers(id: number, addMemberDto: AddMemberDto): Promise<void>;
+    removeMember(departmentId: number, userId: number): Promise<void>;
+    setManager(id: number, setManagerDto: SetManagerDto): Promise<Department>;
+    private transformDepartmentTree;
+    private transformDepartmentWithManager;
+    private transformDepartment;
+    private getDepartmentStats;
+    private wouldCreateCircularReference;
+    private updateDepartmentPath;
+    private updateChildrenLevels;
+    private buildDepartmentTree;
+}

@@ -1,0 +1,20 @@
+{
+  "tableWhitelist": [
+    "departments",
+    "user",
+    "logs",
+    "goods",
+    "goods_category",
+    "report_data"
+  ],
+  "entityClasses": [
+    "Department",
+    "User",
+    "Log",
+    "Goods",
+    "GoodsCategory",
+    "ReportData"
+  ],
+  "description": "myserver 项目中实际使用的数据库表白名单",
+  "createdAt": "2025-07-01T12:09:21.792Z"
+}

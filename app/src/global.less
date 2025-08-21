@@ -1,0 +1,137 @@
+.colorWeak {
+  filter: invert(80%);
+}
+
+.ant-layout {
+  min-height: 100vh;
+}
+.ant-pro-sider.ant-layout-sider.ant-pro-sider-fixed {
+  left: unset;
+}
+
+canvas {
+  display: block;
+}
+
+body {
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+ul,
+ol {
+  list-style: none;
+}
+
+@media (max-width: 768px) {
+  .ant-table {
+    width: 100%;
+    overflow-x: auto;
+    &-thead > tr,
+    &-tbody > tr {
+      > th,
+      > td {
+        white-space: pre;
+        > span {
+          display: block;
+        }
+      }
+    }
+  }
+}
+
+/* --- Tab Styles Start --- */
+
+// 美化整体标签页栏
+.ant-pro-layout .ant-pro-page-container-children-content {
+  .ant-tabs-nav {
+    margin-bottom: 0 !important;
+  }
+}
+
+// 美化 Ant Design Pro 的 antd-pro-tabs 样式
+.ant-pro-tabs-nav {
+  .ant-tabs-nav {
+    margin-bottom: 8px !important; // 减少和下方内容的间距
+  }
+
+  .ant-tabs-tab {
+    padding: 6px 16px !important; // 调整 tab 内部边距
+    font-size: 14px;
+    transition: all 0.3s cubic-bezier(0.645, 0.045, 0.355, 1);
+    border-radius: 4px 4px 0 0 !important;
+    border: 1px solid transparent !important;
+    border-bottom: none !important;
+
+    &:hover {
+      background-color: #f0f2f5; // 添加悬浮效果
+    }
+  }
+
+  .ant-tabs-tab-active {
+    background-color: #fff !important;
+    border-color: #f0f0f0 !important;
+    border-bottom: 1px solid #fff !important;
+    font-weight: 500;
+    color: @primary-color !important;
+    position: relative;
+    // clip-path: inset(0 0 -5px 0); // antd5.x 中 tabbar 的样式方案
+
+    // 添加一个激活状态的下划线指示器
+    &::after {
+      content: '';
+      position: absolute;
+      left: 16px;
+      right: 16px;
+      bottom: -1px;
+      height: 2px;
+      background-color: @primary-color;
+      transition: all 0.3s;
+    }
+  }
+
+  // 调整关闭图标
+  .anticon-close {
+    font-size: 12px;
+    margin-left: 12px !important;
+    color: rgba(0, 0, 0, 0.45);
+    border-radius: 50%;
+    padding: 2px;
+    transition: all 0.3s;
+    &:hover {
+      background-color: rgba(0, 0, 0, 0.1);
+      color: rgba(0, 0, 0, 0.85);
+    }
+  }
+}
+
+/* --- Tab Styles End --- */
+
+/* --- Sidebar Width Customization --- */
+
+// 自定义侧边栏宽度
+.ant-pro-sider {
+  // 展开时的宽度
+  &.ant-layout-sider {
+    width: 280px !important; // 可以修改这个值来调整侧边栏宽度
+  }
+  
+  // 折叠时的宽度
+  &.ant-layout-sider-collapsed {
+    width: 80px !important; // 折叠时的宽度
+  }
+}
+
+// 确保内容区域正确调整
+.ant-pro-layout-has-sider {
+  .ant-layout-content {
+    margin-left: 280px; // 与侧边栏宽度保持一致
+  }
+  
+  .ant-layout-sider-collapsed + .ant-layout .ant-layout-content {
+    margin-left: 80px; // 折叠时与折叠宽度保持一致
+  }
+}
+
+/* --- Sidebar Width Customization End --- */
