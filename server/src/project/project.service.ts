@@ -39,8 +39,8 @@ export class ProjectService {
   @InjectRepository(ProjectCacheLog)
   private projectCacheLogRepository: Repository<ProjectCacheLog>,
   private readonly logHelper: LogHelper,
-  @Inject(forwardRef(() => 'ProjectGateway'))
-  private projectGateway: ProjectGateway,
+  @Inject(forwardRef(() => ProjectGateway))
+  private readonly projectGateway: ProjectGateway,
 ) {}
 
 
@@ -1730,17 +1730,48 @@ async getClearCacheLogs(projectId: string, limit: number = 10): Promise<ProjectC
   });
 }
 
-
-/** 打 APK：实时推日志 -> 复用更新的 WS 事件名 */
-  async executePackageWithRealTimeOutput(projectId: string, userId?: string): Promise<{ logId: string }> {
+// -------- 1) 打 APK --------
+  async executePackageWithRealTimeOutput(
+    projectId: string,
+    p2?: ((s: string) => void) | string,             // 可能是 onOutput，也可能是 userId
+    p3?: (s: string) => void,                        // onError（仅回调模式）
+    p4?: () => void,                                 // onComplete（仅回调模式）
+    p5?: string,                                     // userId（仅回调模式）
+    p6?: string,                                     // username（仅回调模式）
+    p7?: string,                                     // ip
+    p8?: string,                                     // ua
+  ): Promise<{ logId: string }> {
     const project = await this.projectRepository.findOne({ where: { id: projectId } });
     if (!project) throw new NotFoundException('项目不存在');
-    if (!project.enablePackage) throw new BadRequestException('未启用打包功能');
-    if (!project.packageCommand?.trim()) throw new BadRequestException('未配置打包命令');
+    if (!project.enablePackage) throw new BadRequestException('未启用打 APK 功能');
+    if (!project.packageCommand?.trim()) throw new BadRequestException('未配置打 APK 命令');
 
+    // 1) 解析两种调用形态
+    let emitOutput: ((s: string) => void) | undefined;
+    let emitError: ((s: string) => void) | undefined;
+    let emitComplete: (() => void) | undefined;
+    let userId: string | undefined;
+    let username: string | undefined;
+
+    if (typeof p2 === 'function' || typeof p3 === 'function' || typeof p4 === 'function') {
+      // 回调模式（WebSocket 发起）
+      emitOutput   = typeof p2 === 'function' ? p2 : undefined;
+      emitError    = typeof p3 === 'function' ? p3 : undefined;
+      emitComplete = typeof p4 === 'function' ? p4 : undefined;
+      userId       = p5;
+      username     = p6;
+    } else {
+      // HTTP 模式：p2 就是 userId，其它回调为空
+      userId = p2 as string | undefined;
+      // 回退：没有回调时，通过 WS 向房间广播（前端已在 joinRoom('project-${id}')）
+      const room = `project-${projectId}`;
+      emitOutput = (s) => this.projectGateway?.server?.to(room).emit('updateOutput',  { data: s });
+      emitError  = (s) => this.projectGateway?.server?.to(room).emit('updateError',   { message: s });
+      emitComplete = () => this.projectGateway?.server?.to(room).emit('updateComplete', { message: '打 APK 完成' });
+    }
+
+    // 2) 写入一条日志记录
     const startTime = new Date();
-
-    // 固定单实体写法，避免 TypeORM create 推断成数组重载
     const log = await this.projectPackageLogRepository.save(
       this.projectPackageLogRepository.create({
         projectId,
@@ -1749,48 +1780,24 @@ async getClearCacheLogs(projectId: string, limit: number = 10): Promise<ProjectC
         startTime,
         stdout: '',
         stderr: '',
-      })
+      }),
     );
+    try {
+      (project as any).currentPackageStatus = ProjectUpdateStatus.UPDATING;
+      (project as any).currentPackageLogId = log.id;
+      await this.projectRepository.save(project);
+    } catch {}
 
-    project.currentPackageStatus = ProjectUpdateStatus.UPDATING;
-    project.currentPackageLogId = log.id;
-    await this.projectRepository.save(project);
-
-    // 通知前端：状态变更（事件名沿用更新通道）
-    this.projectGateway?.server?.emit?.('projectUpdateStatusChanged', {
-      projectId,
-      status: ProjectUpdateStatus.UPDATING,
-      logId: log.id,
-      source: 'package',
-    });
-
+    // 3) 执行命令（跨平台：shell:true）
     let stdoutBuf = '';
     let stderrBuf = '';
-    const cwd = project.packageDirectory || project.updateDirectory || process.cwd();
+    const cwd = (project as any).packageDirectory || (project as any).updateDirectory || process.cwd();
 
-    this.runCommand({
+    const child: ChildProcess = this.runCommand({
       command: project.packageCommand!,
       cwd,
-      onStdout: (s) => {
-        stdoutBuf += s;
-        this.projectGateway?.server?.emit?.('projectUpdateLog', {
-          projectId,
-          logId: log.id,
-          type: 'stdout',
-          chunk: s,
-          source: 'package',
-        });
-      },
-      onStderr: (s) => {
-        stderrBuf += s;
-        this.projectGateway?.server?.emit?.('projectUpdateLog', {
-          projectId,
-          logId: log.id,
-          type: 'stderr',
-          chunk: s,
-          source: 'package',
-        });
-      },
+      onStdout: (s) => { stdoutBuf += s; emitOutput?.(s); },
+      onStderr: (s) => { stderrBuf += s; emitOutput?.(s); }, // 也可改成 emitError?.(s)
       onClose: async (code, signal) => {
         const endTime = new Date();
         const duration = Math.max(0, Math.round((endTime.getTime() - startTime.getTime()) / 1000));
@@ -1798,50 +1805,63 @@ async getClearCacheLogs(projectId: string, limit: number = 10): Promise<ProjectC
           { id: log.id },
           {
             status: ProjectUpdateStatus.IDLE,
-            endTime,
-            duration,
+            endTime, duration,
             exitCode: code ?? undefined,
             signal: signal ?? undefined,
-            errorMessage: code === 0 ? null : (stderrBuf || '打包失败'),
-            stdout: stdoutBuf,
-            stderr: stderrBuf,
-          }
+            errorMessage: code === 0 ? null : (stderrBuf || '打 APK 失败'),
+            stdout: stdoutBuf, stderr: stderrBuf,
+          },
         );
-        project.currentPackageStatus = ProjectUpdateStatus.IDLE;
-        await this.projectRepository.save(project);
+        try {
+          (project as any).currentPackageStatus = ProjectUpdateStatus.IDLE;
+          await this.projectRepository.save(project);
+        } catch {}
 
-        this.projectGateway?.server?.emit?.('projectUpdateStatusChanged', {
-          projectId,
-          status: ProjectUpdateStatus.IDLE,
-          logId: log.id,
-          success: code === 0,
-          source: 'package',
-        });
+        if (code === 0) emitComplete?.();
+        else emitError?.(stderrBuf || `打 APK 失败，退出码 ${code}`);
       },
-      onError: (err) => {
-        this.projectGateway?.server?.emit?.('projectUpdateLog', {
-          projectId,
-          logId: log.id,
-          type: 'stderr',
-          chunk: `子进程错误: ${err?.message}\n`,
-          source: 'package',
-        });
-      },
+      onError: (err) => emitError?.(`子进程错误：${err?.message || err}`),
     });
 
+    emitOutput?.(`🔧 进程ID: ${child.pid}\n`);
     return { logId: log.id };
   }
 
-
-/** 清缓存：实时推日志 -> 复用更新的 WS 事件名 */
-  async executeClearCacheWithRealTimeOutput(projectId: string, userId?: string): Promise<{ logId: string }> {
+  // -------- 2) 清缓存 --------
+  async executeClearCacheWithRealTimeOutput(
+    projectId: string,
+    p2?: ((s: string) => void) | string,
+    p3?: (s: string) => void,
+    p4?: () => void,
+    p5?: string,
+    p6?: string,
+    p7?: string,
+    p8?: string,
+  ): Promise<{ logId: string }> {
     const project = await this.projectRepository.findOne({ where: { id: projectId } });
     if (!project) throw new NotFoundException('项目不存在');
-    if (!project.enableClearCache) throw new BadRequestException('未启用清缓存功能');
-    if (!project.clearCacheCommand?.trim()) throw new BadRequestException('未配置清缓存命令');
+    if (!(project as any).enableClearCache) throw new BadRequestException('未启用清缓存功能');
+    if (!(project as any).clearCacheCommand?.trim()) throw new BadRequestException('未配置清缓存命令');
+
+    let emitOutput: ((s: string) => void) | undefined;
+    let emitError: ((s: string) => void) | undefined;
+    let emitComplete: (() => void) | undefined;
+    let userId: string | undefined;
+
+    if (typeof p2 === 'function' || typeof p3 === 'function' || typeof p4 === 'function') {
+      emitOutput   = typeof p2 === 'function' ? p2 : undefined;
+      emitError    = typeof p3 === 'function' ? p3 : undefined;
+      emitComplete = typeof p4 === 'function' ? p4 : undefined;
+      userId       = p5;
+    } else {
+      userId = p2 as string | undefined;
+      const room = `project-${projectId}`;
+      emitOutput = (s) => this.projectGateway?.server?.to(room).emit('updateOutput',  { data: s });
+      emitError  = (s) => this.projectGateway?.server?.to(room).emit('updateError',   { message: s });
+      emitComplete = () => this.projectGateway?.server?.to(room).emit('updateComplete', { message: '清缓存完成' });
+    }
 
     const startTime = new Date();
-
     const log = await this.projectCacheLogRepository.save(
       this.projectCacheLogRepository.create({
         projectId,
@@ -1850,48 +1870,23 @@ async getClearCacheLogs(projectId: string, limit: number = 10): Promise<ProjectC
         startTime,
         stdout: '',
         stderr: '',
-      })
+      }),
     );
-
-    project.currentClearCacheStatus = ProjectUpdateStatus.UPDATING;
-    project.currentClearCacheLogId = log.id;
-    await this.projectRepository.save(project);
-
-    this.projectGateway?.server?.emit?.('projectUpdateStatusChanged', {
-      projectId,
-      status: ProjectUpdateStatus.UPDATING,
-      logId: log.id,
-      source: 'clear-cache',
-    });
+    try {
+      (project as any).currentClearCacheStatus = ProjectUpdateStatus.UPDATING;
+      (project as any).currentClearCacheLogId = log.id;
+      await this.projectRepository.save(project);
+    } catch {}
 
     let stdoutBuf = '';
     let stderrBuf = '';
+    const cwd = (project as any).clearCacheDirectory || (project as any).updateDirectory || process.cwd();
 
-    const cwd = project.clearCacheDirectory || project.updateDirectory || process.cwd();
-
-    this.runCommand({
-      command: project.clearCacheCommand!,
+    const child: ChildProcess = this.runCommand({
+      command: (project as any).clearCacheCommand!,
       cwd,
-      onStdout: (s) => {
-        stdoutBuf += s;
-        this.projectGateway?.server?.emit?.('projectUpdateLog', {
-          projectId,
-          logId: log.id,
-          type: 'stdout',
-          chunk: s,
-          source: 'clear-cache',
-        });
-      },
-      onStderr: (s) => {
-        stderrBuf += s;
-        this.projectGateway?.server?.emit?.('projectUpdateLog', {
-          projectId,
-          logId: log.id,
-          type: 'stderr',
-          chunk: s,
-          source: 'clear-cache',
-        });
-      },
+      onStdout: (s) => { stdoutBuf += s; emitOutput?.(s); },
+      onStderr: (s) => { stderrBuf += s; emitOutput?.(s); }, // 或 emitError?.(s)
       onClose: async (code, signal) => {
         const endTime = new Date();
         const duration = Math.max(0, Math.round((endTime.getTime() - startTime.getTime()) / 1000));
@@ -1899,41 +1894,27 @@ async getClearCacheLogs(projectId: string, limit: number = 10): Promise<ProjectC
           { id: log.id },
           {
             status: ProjectUpdateStatus.IDLE,
-            endTime,
-            duration,
+            endTime, duration,
             exitCode: code ?? undefined,
             signal: signal ?? undefined,
             errorMessage: code === 0 ? null : (stderrBuf || '清缓存失败'),
-            stdout: stdoutBuf,
-            stderr: stderrBuf,
-          }
+            stdout: stdoutBuf, stderr: stderrBuf,
+          },
         );
+        try {
+          (project as any).currentClearCacheStatus = ProjectUpdateStatus.IDLE;
+          await this.projectRepository.save(project);
+        } catch {}
 
-        project.currentClearCacheStatus = ProjectUpdateStatus.IDLE;
-        await this.projectRepository.save(project);
-
-        this.projectGateway?.server?.emit?.('projectUpdateStatusChanged', {
-          projectId,
-          status: ProjectUpdateStatus.IDLE,
-          logId: log.id,
-          success: code === 0,
-          source: 'clear-cache',
-        });
+        if (code === 0) emitComplete?.();
+        else emitError?.(stderrBuf || `清缓存失败，退出码 ${code}`);
       },
-      onError: (err) => {
-        this.projectGateway?.server?.emit?.('projectUpdateLog', {
-          projectId,
-          logId: log.id,
-          type: 'stderr',
-          chunk: `子进程错误: ${err?.message}\n`,
-          source: 'clear-cache',
-        });
-      },
+      onError: (err) => emitError?.(`子进程错误：${err?.message || err}`),
     });
 
+    emitOutput?.(`🔧 进程ID: ${child.pid}\n`);
     return { logId: log.id };
   }
-
 
 
 

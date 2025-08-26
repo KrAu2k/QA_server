@@ -24,13 +24,8 @@ import { LogModule } from '../log/log.module';
   controllers: [ProjectController],
   providers: [
     ProjectService,
-    ProjectGateway,
-    {
-      provide: 'ProjectGateway',
-      useFactory: (gateway: ProjectGateway) => gateway,
-      inject: [ProjectGateway],
-    },
+    ProjectGateway
   ],
-  exports: [ProjectService],
+  exports: [ProjectService, ProjectGateway],
 })
 export class ProjectModule {}
