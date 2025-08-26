@@ -11,7 +11,7 @@ import EditableLinkGroup from './components/EditableLinkGroup';
 import type { ActivitiesType } from './data'; 
 import { getActiveProjects, executeProjectUpdate, Project, getProjectUpdateLogs, getProjectUpdateCodeLogs, ProjectUpdateLog } from '@/services/system/project';
 import { useProjectWebSocket } from '@/hooks/useProjectWebSocket';
-import { DeleteOutlined } from '@ant-design/icons';
+import { DeleteOutlined, MobileOutlined} from '@ant-design/icons';
 import { executeProjectClearCache } from '@/services/system/project';
 import useStyles from './style.style';
 dayjs.extend(relativeTime);
@@ -102,7 +102,7 @@ const Workplace: FC = () => {
   const [projectCodeStatuses, setProjectCodeStatuses] = useState<Record<string, string>>({});
 
   // 项目打包状态_new
-  const [projectPackageStatuses, setProjectPackageStatuses] = useState<Record<string, 'idle' | 'updating'>>({});
+  const [projectPackageStatuses, setProjectPackageStatuses] = useState<Record<string, 'idle'|'updating'>>({});
   const [isExecutingPackage, setIsExecutingPackage] = useState(false);
 
 
@@ -453,24 +453,21 @@ const Workplace: FC = () => {
 
   //new 处理项目打包
   const handleProjectPackage = async (project: Project, e?: React.MouseEvent) => {
-  e?.stopPropagation?.();
-  const status = projectPackageStatuses[project.id] || project.currentPackageStatus;
-  if (status === 'updating' || isExecutingPackage) return;
-
-  setIsExecutingPackage(true);
-  setProjectPackageStatuses(prev => ({ ...prev, [project.id]: 'updating' }));
-
-  try {
-    await executeProjectPackage(project.id); // 触发后端打包（日志/状态通过 WS 或拉取接口展示）
-    // 如果你用的是 WS 实时日志，这里不需要额外处理；完成后端会推状态回来
-  } catch (err: any) {
-    message.error(`触发打 APK 失败：${err?.message || '未知错误'}`);
-    // 回滚到 idle
-    setProjectPackageStatuses(prev => ({ ...prev, [project.id]: 'idle' }));
-  } finally {
-    setIsExecutingPackage(false);
-  }
-};
+    e?.stopPropagation?.();
+    const status = projectPackageStatuses[project.id] || project.currentPackageStatus;
+    if (status === 'updating' || isExecutingPackage) return;
+    setIsExecutingPackage(true);
+    setProjectPackageStatuses(prev => ({ ...prev, [project.id]: 'updating' }));
+    try {
+      await executeProjectPackage(project.id);
+      // 日志 & 状态通过现有 WS 事件推过来（和“更新”一致），前端原有订阅会显示
+    } catch (err:any) {
+      message.error(`触发打 APK 失败：${err?.message || '未知错误'}`);
+      setProjectPackageStatuses(prev => ({ ...prev, [project.id]: 'idle' }));
+    } finally {
+      setIsExecutingPackage(false);
+    }
+  };
 
 const [projectClearStatuses, setProjectClearStatuses] = useState<Record<string, 'idle'|'updating'>>({});
 const [isExecutingClear, setIsExecutingClear] = useState(false);
@@ -479,13 +476,11 @@ const handleProjectClear = async (project: Project, e?: React.MouseEvent) => {
   e?.stopPropagation?.();
   const status = projectClearStatuses[project.id] || project.currentClearCacheStatus;
   if (status === 'updating' || isExecutingClear) return;
-
   setIsExecutingClear(true);
   setProjectClearStatuses(prev => ({ ...prev, [project.id]: 'updating' }));
   try {
     await executeProjectClearCache(project.id);
-    // 日志/状态都会通过你“更新”的 WS 事件显示/回落
-  } catch (err: any) {
+  } catch (err:any) {
     message.error(`触发清缓存失败：${err?.message || '未知错误'}`);
     setProjectClearStatuses(prev => ({ ...prev, [project.id]: 'idle' }));
   } finally {
@@ -1063,14 +1058,12 @@ const handleProjectClear = async (project: Project, e?: React.MouseEvent) => {
 
                           
 {project.enablePackage && (
-  <Button 
+  <Button
     size="small"
-    icon={
-      <AndroidOutlined
-        spin={(projectPackageStatuses[project.id] || project.currentPackageStatus) === 'updating' || isExecutingPackage}
-        style={{ fontSize: '14px' }}
-      />
-    }
+    icon={<MobileOutlined
+      spin={(projectPackageStatuses[project.id] || project.currentPackageStatus) === 'updating' || isExecutingPackage}
+      style={{ fontSize: '14px' }}
+    />}
     onClick={(e) => handleProjectPackage(project, e)}
     disabled={(projectPackageStatuses[project.id] || project.currentPackageStatus) === 'updating' || isExecutingPackage}
     loading={(projectPackageStatuses[project.id] || project.currentPackageStatus) === 'updating' || isExecutingPackage}
@@ -1095,12 +1088,10 @@ const handleProjectClear = async (project: Project, e?: React.MouseEvent) => {
 {project.enableClearCache && (
   <Button
     size="small"
-    icon={
-      <DeleteOutlined
-        spin={(projectClearStatuses[project.id] || project.currentClearCacheStatus) === 'updating' || isExecutingClear}
-        style={{ fontSize: '14px' }}
-      />
-    }
+    icon={<DeleteOutlined
+      spin={(projectClearStatuses[project.id] || project.currentClearCacheStatus) === 'updating' || isExecutingClear}
+      style={{ fontSize: '14px' }}
+    />}
     onClick={(e) => handleProjectClear(project, e)}
     disabled={(projectClearStatuses[project.id] || project.currentClearCacheStatus) === 'updating' || isExecutingClear}
     loading={(projectClearStatuses[project.id] || project.currentClearCacheStatus) === 'updating' || isExecutingClear}
