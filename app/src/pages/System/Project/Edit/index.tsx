@@ -207,6 +207,16 @@ const EditProject: React.FC = () => {
             placeholder="请输入更新代码目录的绝对路径"
             extra="执行更新代码命令的工作目录"
           />
+
+
+          <ProFormSwitch name="enablePackage" label="启用打包功能" />
+<ProFormText name="packageCommand" label="打包命令" />
+<ProFormText name="packageDirectory" label="打包目录" />
+<ProFormText name="packageDownloadUrl" label="APK 下载地址" />
+<ProFormSwitch name="enableClearCache" label="启用清缓存功能" />
+<ProFormText name="clearCacheCommand" label="清缓存命令" />
+<ProFormText name="clearCacheDirectory" label="清缓存目录" />
+
         </ProForm>
       </Card>
     </PageContainer>

@@ -13,6 +13,9 @@ import { getActiveProjects, executeProjectUpdate, Project, getProjectUpdateLogs,
 import { useProjectWebSocket } from '@/hooks/useProjectWebSocket';
 import useStyles from './style.style';
 dayjs.extend(relativeTime);
+
+import { AndroidOutlined } from '@ant-design/icons';
+import { executeProjectPackage } from '@/services/system/project';
  
 const MAX_LOG_LENGTH = 20000; // 日志最大长度，防止浏览器卡顿
 
@@ -95,6 +98,11 @@ const Workplace: FC = () => {
   // 项目更新代码日志状态
   const [projectCodeLogs, setProjectCodeLogs] = useState<Record<string, any[]>>({});
   const [projectCodeStatuses, setProjectCodeStatuses] = useState<Record<string, string>>({});
+
+  // 项目打包状态_new
+  const [projectPackageStatuses, setProjectPackageStatuses] = useState<Record<string, 'idle' | 'updating'>>({});
+  const [isExecutingPackage, setIsExecutingPackage] = useState(false);
+
 
   // 获取项目更新日志
   const fetchProjectLogs = useCallback(async (projectId: string) => {
@@ -438,6 +446,32 @@ const Workplace: FC = () => {
     executeUpdateCode(project.id, currentUser?.employeeNo, currentUser?.name);
   };
   
+
+
+
+  //new 处理项目打包
+  const handleProjectPackage = async (project: Project, e?: React.MouseEvent) => {
+  e?.stopPropagation?.();
+  const status = projectPackageStatuses[project.id] || project.currentPackageStatus;
+  if (status === 'updating' || isExecutingPackage) return;
+
+  setIsExecutingPackage(true);
+  setProjectPackageStatuses(prev => ({ ...prev, [project.id]: 'updating' }));
+
+  try {
+    await executeProjectPackage(project.id); // 触发后端打包（日志/状态通过 WS 或拉取接口展示）
+    // 如果你用的是 WS 实时日志，这里不需要额外处理；完成后端会推状态回来
+  } catch (err: any) {
+    message.error(`触发打 APK 失败：${err?.message || '未知错误'}`);
+    // 回滚到 idle
+    setProjectPackageStatuses(prev => ({ ...prev, [project.id]: 'idle' }));
+  } finally {
+    setIsExecutingPackage(false);
+  }
+};
+
+
+
   const renderActivities = (item: ActivitiesType) => {
     const events = item.template.split(/@\{([^{}]*)\}/gi).map((key) => {
       if (item[key as keyof ActivitiesType]) {
@@ -1000,7 +1034,40 @@ const Workplace: FC = () => {
                             >
                               {(projectCodeStatuses[project.id] || project.currentUpdateCodeStatus) === 'updating' ? '更新代码中' : '更新代码'}
                             </Button>
+                            
                           )}
+
+                          
+{project.enablePackage && (
+  <Button 
+    size="small"
+    icon={
+      <AndroidOutlined
+        spin={(projectPackageStatuses[project.id] || project.currentPackageStatus) === 'updating' || isExecutingPackage}
+        style={{ fontSize: '14px' }}
+      />
+    }
+    onClick={(e) => handleProjectPackage(project, e)}
+    disabled={(projectPackageStatuses[project.id] || project.currentPackageStatus) === 'updating' || isExecutingPackage}
+    loading={(projectPackageStatuses[project.id] || project.currentPackageStatus) === 'updating' || isExecutingPackage}
+    style={{
+      borderRadius: '6px',
+      fontWeight: '500',
+      fontSize: '12px',
+      height: '32px',
+      backgroundColor: (projectPackageStatuses[project.id] || project.currentPackageStatus) === 'updating' ? '#faad14' : '#722ed1',
+      borderColor:    (projectPackageStatuses[project.id] || project.currentPackageStatus) === 'updating' ? '#faad14' : '#722ed1',
+      color: 'white',
+      boxShadow: (projectPackageStatuses[project.id] || project.currentPackageStatus) === 'updating'
+        ? '0 2px 4px rgba(250, 173, 20, 0.2)'
+        : '0 2px 4px rgba(114, 46, 209, 0.2)',
+    }}
+  >
+    {(projectPackageStatuses[project.id] || project.currentPackageStatus) === 'updating' ? '打 APK 中' : '打 APK'}
+  </Button>
+)}
+
+
                         </div>
                         <div style={{ 
                           fontSize: '11px', 

@@ -8,49 +8,38 @@ export interface Project {
   icon?: string;
   sortOrder: number;
   isActive: boolean;
+
   updateCommand?: string;
   updateDirectory?: string;
   enableUpdate: boolean;
+
   updateCodeCommand?: string;
   updateCodeDirectory?: string;
   enableUpdateCode: boolean;
-  currentUpdateStatus: 'idle' | 'updating';
-  currentUpdateLogId?: string;
-  currentUpdateCodeStatus: 'idle' | 'updating';
-  currentUpdateCodeLogId?: string;
+
+  // 新增字段：
+  packageCommand?: string;
+  packageDirectory?: string;
+  enablePackage?: boolean;
+  packageDownloadUrl?: string;
+  clearCacheCommand?: string;
+  clearCacheDirectory?: string;
+  enableClearCache?: boolean;
+  currentPackageStatus?: 'idle' | 'updating';
+  currentPackageLogId?: string;
+  currentClearCacheStatus?: 'idle' | 'updating';
+  currentClearCacheLogId?: string;
+
   createdAt: string;
   updatedAt: string;
 }
 
-export interface CreateProjectRequest {
+export interface CreateProjectRequest extends Partial<Project> {
   name: string;
-  description?: string;
   h5Url: string;
-  icon?: string;
-  sortOrder?: number;
-  isActive?: boolean;
-  updateCommand?: string;
-  updateDirectory?: string;
-  enableUpdate?: boolean;
-  updateCodeCommand?: string;
-  updateCodeDirectory?: string;
-  enableUpdateCode?: boolean;
 }
 
-export interface UpdateProjectRequest {
-  name?: string;
-  description?: string;
-  h5Url?: string;
-  icon?: string;
-  sortOrder?: number;
-  isActive?: boolean;
-  updateCommand?: string;
-  updateDirectory?: string;
-  enableUpdate?: boolean;
-  updateCodeCommand?: string;
-  updateCodeDirectory?: string;
-  enableUpdateCode?: boolean;
-}
+export interface UpdateProjectRequest extends Partial<Project> {}
 
 export interface QueryProjectRequest {
   current?: string;
@@ -77,29 +66,8 @@ export interface BaseResponse {
   message: string;
 }
 
-export interface ProjectUpdateLog {
-  id: string;
-  projectId: string;
-  status: 'updating' | 'completed' | 'failed' | 'timeout';
-  output?: string;
-  startedBy?: string;
-  startedByName?: string;
-  startTime: string;
-  endTime?: string;
-  duration?: number;
-  svnRevision?: number; // SVN版本号
-  exitCode?: number; // 进程退出码
-  signal?: string; // 进程终止信号
-  errorMessage?: string; // 错误信息
-  updatedAt: string;
-}
+// 以下为原有接口，保持不变
 
-export interface ProjectUpdateStatus {
-  status: 'idle' | 'updating';
-  currentLog?: ProjectUpdateLog;
-}
-
-// 获取项目列表（分页）
 export async function getProjects(params?: QueryProjectRequest): Promise<ProjectListResponse> {
   return request('/api/projects', {
     method: 'GET',
@@ -107,28 +75,24 @@ export async function getProjects(params?: QueryProjectRequest): Promise<Project
   });
 }
 
-// 获取所有项目（不分页）
 export async function getAllProjects(): Promise<ProjectListResponse> {
   return request('/api/projects', {
     method: 'GET',
   });
 }
 
-// 获取工作台项目（只返回启用的项目）
 export async function getActiveProjects(): Promise<ProjectListResponse> {
   return request('/api/projects/active', {
     method: 'GET',
   });
 }
 
-// 获取项目详情
 export async function getProject(id: string): Promise<ProjectResponse> {
   return request(`/api/projects/${id}`, {
     method: 'GET',
   });
 }
 
-// 创建项目
 export async function createProject(data: CreateProjectRequest): Promise<ProjectResponse> {
   return request('/api/projects', {
     method: 'POST',
@@ -136,7 +100,6 @@ export async function createProject(data: CreateProjectRequest): Promise<Project
   });
 }
 
-// 更新项目
 export async function updateProject(id: string, data: UpdateProjectRequest): Promise<ProjectResponse> {
   return request(`/api/projects/${id}`, {
     method: 'PUT',
@@ -144,14 +107,12 @@ export async function updateProject(id: string, data: UpdateProjectRequest): Pro
   });
 }
 
-// 删除项目
 export async function deleteProject(id: string): Promise<BaseResponse> {
   return request(`/api/projects/${id}`, {
     method: 'DELETE',
   });
 }
 
-// 批量更新项目状态
 export async function batchToggleProjectStatus(ids: string[], isActive: boolean): Promise<BaseResponse> {
   return request('/api/projects/batch-toggle-status', {
     method: 'PUT',
@@ -159,54 +120,62 @@ export async function batchToggleProjectStatus(ids: string[], isActive: boolean)
   });
 }
 
-// 执行项目更新
-export async function executeProjectUpdate(id: string): Promise<{
-  success: boolean;
-  message: string;
-  output?: string;
-}> {
+// 更新项目命令接口
+export async function executeProjectUpdate(id: string): Promise<{ success: boolean; message: string; output?: string }> {
   return request(`/api/projects/${id}/update`, {
     method: 'POST',
   });
 }
 
-// 获取项目更新状态
-export async function getProjectUpdateStatus(projectId: string): Promise<{ data: ProjectUpdateStatus; success: boolean; message: string }> {
-  return request(`/api/projects/${projectId}/update-status`, {
+
+
+
+
+
+// 新增请求方法
+export async function getProjectPackageStatus(projectId: string) {
+  return request(`/api/projects/${projectId}/package-status`, {
     method: 'GET',
   });
 }
 
-// 获取项目更新日志
-export async function getProjectUpdateLogs(projectId: string, limit: number = 10): Promise<{ data: ProjectUpdateLog[]; success: boolean; message: string }> {
+export async function getProjectPackageLogs(projectId: string, limit = 10) {
+  return request(`/api/projects/${projectId}/package-logs`, {
+    method: 'GET',
+    params: { limit },
+  });
+}
+
+export async function getProjectClearCacheStatus(projectId: string) {
+  return request(`/api/projects/${projectId}/clear-cache-status`, {
+    method: 'GET',
+  });
+}
+
+export async function getProjectClearCacheLogs(projectId: string, limit = 10) {
+  return request(`/api/projects/${projectId}/clear-cache-logs`, {
+    method: 'GET',
+    params: { limit },
+  });
+}
+
+
+// 获取【项目更新】日志（limit 默认 10）
+export async function getProjectUpdateLogs(projectId: string, limit: number = 10) {
   return request(`/api/projects/${projectId}/update-logs`, {
     method: 'GET',
     params: { limit },
   });
 }
 
-// 执行项目代码更新
-export async function executeProjectUpdateCode(id: string): Promise<{
-  success: boolean;
-  message: string;
-  output?: string;
-}> {
-  return request(`/api/projects/${id}/update-code`, {
-    method: 'POST',
-  });
-}
-
-// 获取项目代码更新状态
-export async function getProjectUpdateCodeStatus(projectId: string): Promise<{ data: ProjectUpdateStatus; success: boolean; message: string }> {
-  return request(`/api/projects/${projectId}/update-code-status`, {
-    method: 'GET',
-  });
-}
-
-// 获取项目代码更新日志
-export async function getProjectUpdateCodeLogs(projectId: string, limit: number = 10): Promise<{ data: ProjectUpdateLog[]; success: boolean; message: string }> {
+// 获取【项目更新代码】日志（limit 默认 10）
+export async function getProjectUpdateCodeLogs(projectId: string, limit: number = 10) {
   return request(`/api/projects/${projectId}/update-code-logs`, {
     method: 'GET',
     params: { limit },
   });
+}
+
+export async function executeProjectPackage(id: string) {
+   return request(`/api/projects/${id}/package`, { method: 'POST' });
 }
