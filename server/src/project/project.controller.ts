@@ -407,13 +407,21 @@ export class ProjectController {
 
   // 触发打 APK（POST）
 // URL: /api/projects/:id/package   （若你的全局前缀不是 /api，请把前端 URL 对齐）
-@Post(':id/package')
+
+  // 打 APK（POST）
+  @Post(':id/package')
   async executePackage(@Param('id') id: string, @Request() req: any) {
     const userId = req.user?.id || req.user?.userId || 'anonymous';
     const { logId } = await this.projectService.executePackageWithRealTimeOutput(id, userId);
     return { data: { logId }, success: true, message: '打包任务已触发' };
   }
 
-
+  // 清缓存（POST）
+  @Post(':id/clear-cache')
+  async executeClearCache(@Param('id') id: string, @Request() req: any) {
+    const userId = req.user?.id || req.user?.userId || 'anonymous';
+    const { logId } = await this.projectService.executeClearCacheWithRealTimeOutput(id, userId);
+    return { data: { logId }, success: true, message: '清缓存任务已触发' };
+  }
 
 }

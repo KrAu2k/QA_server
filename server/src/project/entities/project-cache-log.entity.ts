@@ -55,4 +55,10 @@ export class ProjectCacheLog {
 
   @UpdateDateColumn()
   updatedAt: Date;
+
+  @Column({ type: 'text', nullable: true })
+  stdout?: string;
+
+  @Column({ type: 'text', nullable: true })
+  stderr?: string;
 }

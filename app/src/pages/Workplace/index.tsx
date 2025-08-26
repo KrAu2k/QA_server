@@ -11,6 +11,8 @@ import EditableLinkGroup from './components/EditableLinkGroup';
 import type { ActivitiesType } from './data'; 
 import { getActiveProjects, executeProjectUpdate, Project, getProjectUpdateLogs, getProjectUpdateCodeLogs, ProjectUpdateLog } from '@/services/system/project';
 import { useProjectWebSocket } from '@/hooks/useProjectWebSocket';
+import { DeleteOutlined } from '@ant-design/icons';
+import { executeProjectClearCache } from '@/services/system/project';
 import useStyles from './style.style';
 dayjs.extend(relativeTime);
 
@@ -469,6 +471,28 @@ const Workplace: FC = () => {
     setIsExecutingPackage(false);
   }
 };
+
+const [projectClearStatuses, setProjectClearStatuses] = useState<Record<string, 'idle'|'updating'>>({});
+const [isExecutingClear, setIsExecutingClear] = useState(false);
+//new 处理项目清缓存
+const handleProjectClear = async (project: Project, e?: React.MouseEvent) => {
+  e?.stopPropagation?.();
+  const status = projectClearStatuses[project.id] || project.currentClearCacheStatus;
+  if (status === 'updating' || isExecutingClear) return;
+
+  setIsExecutingClear(true);
+  setProjectClearStatuses(prev => ({ ...prev, [project.id]: 'updating' }));
+  try {
+    await executeProjectClearCache(project.id);
+    // 日志/状态都会通过你“更新”的 WS 事件显示/回落
+  } catch (err: any) {
+    message.error(`触发清缓存失败：${err?.message || '未知错误'}`);
+    setProjectClearStatuses(prev => ({ ...prev, [project.id]: 'idle' }));
+  } finally {
+    setIsExecutingClear(false);
+  }
+};
+
 
 
 
@@ -1064,6 +1088,36 @@ const Workplace: FC = () => {
     }}
   >
     {(projectPackageStatuses[project.id] || project.currentPackageStatus) === 'updating' ? '打 APK 中' : '打 APK'}
+  </Button>
+)}
+
+
+{project.enableClearCache && (
+  <Button
+    size="small"
+    icon={
+      <DeleteOutlined
+        spin={(projectClearStatuses[project.id] || project.currentClearCacheStatus) === 'updating' || isExecutingClear}
+        style={{ fontSize: '14px' }}
+      />
+    }
+    onClick={(e) => handleProjectClear(project, e)}
+    disabled={(projectClearStatuses[project.id] || project.currentClearCacheStatus) === 'updating' || isExecutingClear}
+    loading={(projectClearStatuses[project.id] || project.currentClearCacheStatus) === 'updating' || isExecutingClear}
+    style={{
+      borderRadius: '6px',
+      fontWeight: '500',
+      fontSize: '12px',
+      height: '32px',
+      backgroundColor: (projectClearStatuses[project.id] || project.currentClearCacheStatus) === 'updating' ? '#faad14' : '#eb2f96',
+      borderColor:    (projectClearStatuses[project.id] || project.currentClearCacheStatus) === 'updating' ? '#faad14' : '#eb2f96',
+      color: 'white',
+      boxShadow: (projectClearStatuses[project.id] || project.currentClearCacheStatus) === 'updating'
+        ? '0 2px 4px rgba(250, 173, 20, 0.2)'
+        : '0 2px 4px rgba(235, 47, 150, 0.2)',
+    }}
+  >
+    {(projectClearStatuses[project.id] || project.currentClearCacheStatus) === 'updating' ? '清缓存中' : '清缓存'}
   </Button>
 )}
 

@@ -179,3 +179,7 @@ export async function getProjectUpdateCodeLogs(projectId: string, limit: number 
 export async function executeProjectPackage(id: string) {
    return request(`/api/projects/${id}/package`, { method: 'POST' });
 }
+
+export async function executeProjectClearCache(id: string) {
+  return request(`/api/projects/${id}/clear-cache`, { method: 'POST' });
+}

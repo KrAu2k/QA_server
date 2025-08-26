@@ -10,7 +10,7 @@ import { QueryProjectDto } from './dto/query-project.dto';
 import { LogHelper } from '../log/utils/log-helper';
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import { spawn } from 'child_process';
+import { spawn ,ChildProcess} from 'child_process';
 import { Cron, CronExpression } from '@nestjs/schedule';
 
 import { ProjectPackageLog } from './entities/project-package-log.entity';
@@ -22,32 +22,27 @@ const execAsync = promisify(exec);
 export class ProjectService {
 
   /** 跨平台执行命令：Windows 用 cmd.exe，Mac/Linux 用 /bin/sh（由 Node 自动选择） */
-private runCommand(opts: {
-  command: string;
-  cwd?: string;
-  onStdout?: (s: string) => void;
-  onStderr?: (s: string) => void;
-  onClose?: (code: number | null, signal: NodeJS.Signals | null) => void;
-  onError?: (err: Error) => void; // ★ 新增: 允许外部传入 onError 处理 spawn 级别错误
-}) {
-  const child = spawn(opts.command, {
-    cwd: opts.cwd,
-    shell: true,
-    env: process.env,
-  });
-
-  // 统一转成字符串
-  child.stdout.on('data', (buf) => opts.onStdout?.(buf.toString()));
-  child.stderr.on('data', (buf) => opts.onStderr?.(buf.toString()));
-
-  // ★ 新增: 监听 spawn 失败（命令不存在/权限问题等）
-  child.on('error', (err) => opts.onError?.(err));
-
-  // 进程结束
-  child.on('close', (code, signal) => opts.onClose?.(code, signal));
-
-  return child;
-}
+  private runCommand(opts: {
+    command: string;
+    cwd?: string;
+    onStdout?: (s: string) => void;
+    onStderr?: (s: string) => void;
+    onClose?: (code: number | null, signal: NodeJS.Signals | null) => void;
+    onError?: (err: Error) => void;
+  }): ChildProcess {
+    const child = spawn(opts.command, {
+      cwd: opts.cwd,
+      shell: true,        // Windows 自动走 cmd.exe，Unix 走 /bin/sh（Node 官方行为）
+      env: process.env,
+    });
+  
+    if (opts.onStdout) child.stdout?.on('data', (buf) => opts.onStdout!(buf.toString()));
+    if (opts.onStderr) child.stderr?.on('data', (buf) => opts.onStderr!(buf.toString()));
+    if (opts.onError)  child.on('error', opts.onError);
+    if (opts.onClose)  child.on('close', opts.onClose);
+  
+    return child;        // ★ 关键：返回 ChildProcess，调用处就能 .pid/.kill/.stdout/.stderr
+  }
 
   
   constructor(
@@ -1734,10 +1729,10 @@ async getClearCacheLogs(projectId: string, limit: number = 10): Promise<ProjectC
 async executePackageWithRealTimeOutput(projectId: string, userId?: string): Promise<{ logId: string }> {
   const project = await this.projectRepository.findOne({ where: { id: projectId } });
   if (!project) throw new NotFoundException('项目不存在');
-  if (!project.enablePackage) throw new BadRequestException('该项目未启用打包功能');
+  if (!project.enablePackage) throw new BadRequestException('未启用打包功能');
   if (!project.packageCommand?.trim()) throw new BadRequestException('未配置打包命令');
 
-  // 1) 新建日志，标记 updating
+  // 建日志 + 置状态
   const startTime = new Date();
   const log = await this.projectPackageLogRepository.save(
     this.projectPackageLogRepository.create({
@@ -1749,68 +1744,53 @@ async executePackageWithRealTimeOutput(projectId: string, userId?: string): Prom
       stderr: '',
     }),
   );
-
   project.currentPackageStatus = ProjectUpdateStatus.UPDATING;
   project.currentPackageLogId = log.id;
   await this.projectRepository.save(project);
 
-  // 2) 执行命令
+  // 开始执行，stdout/stderr 复用“更新日志”的事件
   let stdoutBuf = '';
   let stderrBuf = '';
   const cwd = project.packageDirectory || project.updateDirectory || process.cwd();
 
-  // 控制台标记，便于你在服务器里看到
-  console.log(`[package] [${project.name}] cwd=${cwd}`);
-  console.log(`[package] [${project.name}] command="${project.packageCommand}"`);
+  // 提前告知前端：开始了（沿用更新的状态事件名，如果你有的话）
+  this.projectGateway?.server?.emit?.('projectUpdateStatusChanged', {
+    projectId,
+    status: ProjectUpdateStatus.UPDATING,
+    logId: log.id,
+    source: 'package', // 可带上来源，前端不需要也无妨
+  });
 
   this.runCommand({
     command: project.packageCommand!,
     cwd,
     onStdout: (s) => {
       stdoutBuf += s;
-      // 立刻打印到服务器控制台（可看到实时输出）
-      for (const line of s.split(/\r?\n/)) {
-        if (line.trim()) console.log(`[package][stdout] ${line}`);
-      }
+      this.projectGateway?.server?.emit?.('projectUpdateLog', {
+        projectId,
+        logId: log.id,
+        type: 'stdout',
+        chunk: s,
+        source: 'package',
+      });
     },
     onStderr: (s) => {
       stderrBuf += s;
-      for (const line of s.split(/\r?\n/)) {
-        if (line.trim()) console.error(`[package][stderr] ${line}`);
-      }
-    },
-    onError: async (err) => {
-      // spawn 失败（命令不存在、权限不足等），也要落库并复位
-      const endTime = new Date();
-      const duration = Math.max(0, Math.round((endTime.getTime() - startTime.getTime()) / 1000));
-      const msg = (err?.message || String(err) || 'spawn error');
-
-      stderrBuf += `\n${msg}`;
-      console.error(`[package][error] ${msg}`);
-
-      await this.projectPackageLogRepository.update(
-        { id: log.id },
-        {
-          status: ProjectUpdateStatus.IDLE,
-          endTime,
-          duration,
-          exitCode: -1,
-          errorMessage: msg,
-          stdout: stdoutBuf,
-          stderr: stderrBuf,
-        },
-      );
-      project.currentPackageStatus = ProjectUpdateStatus.IDLE;
-      await this.projectRepository.save(project);
+      this.projectGateway?.server?.emit?.('projectUpdateLog', {
+        projectId,
+        logId: log.id,
+        type: 'stderr',
+        chunk: s,
+        source: 'package',
+      });
     },
     onClose: async (code, signal) => {
       const endTime = new Date();
       const duration = Math.max(0, Math.round((endTime.getTime() - startTime.getTime()) / 1000));
-
       await this.projectPackageLogRepository.update(
         { id: log.id },
         {
-          status: ProjectUpdateStatus.IDLE, // 结束回到 idle
+          status: ProjectUpdateStatus.IDLE,
           endTime,
           duration,
           exitCode: code ?? undefined,
@@ -1820,17 +1800,112 @@ async executePackageWithRealTimeOutput(projectId: string, userId?: string): Prom
           stderr: stderrBuf,
         },
       );
-
       project.currentPackageStatus = ProjectUpdateStatus.IDLE;
       await this.projectRepository.save(project);
 
-      console.log(`[package] [${project.name}] done code=${code} signal=${signal}`);
+      this.projectGateway?.server?.emit?.('projectUpdateStatusChanged', {
+        projectId,
+        status: ProjectUpdateStatus.IDLE,
+        logId: log.id,
+        success: code === 0,
+        source: 'package',
+      });
     },
   });
 
-  // 立即返回，不阻塞前端
   return { logId: log.id };
 }
+
+
+// 清缓存
+async executeClearCacheWithRealTimeOutput(projectId: string, userId?: string): Promise<{ logId: string }> {
+    const project = await this.projectRepository.findOne({ where: { id: projectId } });
+    if (!project) throw new NotFoundException('项目不存在');
+    if (!project.enableClearCache) throw new BadRequestException('未启用清缓存功能');
+    if (!project.clearCacheCommand?.trim()) throw new BadRequestException('未配置清缓存命令');
+
+    const startTime = new Date();
+    const log = await this.projectCacheLogRepository.save(
+      this.projectCacheLogRepository.create({
+        projectId,
+        status: ProjectUpdateStatus.UPDATING,
+        startedBy: userId ?? 'anonymous',
+        startTime,
+        stdout: '',
+        stderr: '',
+      }),
+    );
+    project.currentClearCacheStatus = ProjectUpdateStatus.UPDATING;
+    project.currentClearCacheLogId = log.id;
+    await this.projectRepository.save(project);
+
+    let stdoutBuf = '';
+    let stderrBuf = '';
+    const cwd = project.clearCacheDirectory || project.updateDirectory || process.cwd();
+
+    this.projectGateway?.server?.emit?.('projectUpdateStatusChanged', {
+      projectId,
+      status: ProjectUpdateStatus.UPDATING,
+      logId: log.id,
+      source: 'clear-cache',
+    });
+
+    this.runCommand({
+      command: project.clearCacheCommand!,
+      cwd,
+      onStdout: (s) => {
+        stdoutBuf += s;
+        this.projectGateway?.server?.emit?.('projectUpdateLog', {
+          projectId,
+          logId: log.id,
+          type: 'stdout',
+          chunk: s,
+          source: 'clear-cache',
+        });
+      },
+      onStderr: (s) => {
+        stderrBuf += s;
+        this.projectGateway?.server?.emit?.('projectUpdateLog', {
+          projectId,
+          logId: log.id,
+          type: 'stderr',
+          chunk: s,
+          source: 'clear-cache',
+        });
+      },
+      onClose: async (code, signal) => {
+        const endTime = new Date();
+        const duration = Math.max(0, Math.round((endTime.getTime() - startTime.getTime()) / 1000));
+        await this.projectCacheLogRepository.update(
+          { id: log.id },
+          {
+            status: ProjectUpdateStatus.IDLE,
+            endTime,
+            duration,
+            exitCode: code ?? undefined,
+            signal: signal ?? undefined,
+            errorMessage: code === 0 ? null : (stderrBuf || '清缓存失败'),
+            stdout: stdoutBuf,
+            stderr: stderrBuf,
+          },
+        );
+        project.currentClearCacheStatus = ProjectUpdateStatus.IDLE;
+        await this.projectRepository.save(project);
+
+        this.projectGateway?.server?.emit?.('projectUpdateStatusChanged', {
+          projectId,
+          status: ProjectUpdateStatus.IDLE,
+          logId: log.id,
+          success: code === 0,
+          source: 'clear-cache',
+        });
+      },
+    });
+
+    return { logId: log.id };
+}
+
+
 
 
 
