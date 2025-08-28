@@ -66,6 +66,7 @@ const CreateProject: React.FC = () => {
               },
             ]}
           />
+
           <ProFormTextArea
             name="description"
             label="项目描述"
@@ -74,6 +75,7 @@ const CreateProject: React.FC = () => {
               rows: 4,
             }}
           />
+
           <ProFormText
             name="h5Url"
             label="H5地址"
@@ -89,6 +91,7 @@ const CreateProject: React.FC = () => {
               },
             ]}
           />
+
           <ProFormText
             name="icon"
             label="项目图标"
@@ -100,6 +103,7 @@ const CreateProject: React.FC = () => {
               },
             ]}
           />
+
           <ProFormDigit
             name="sortOrder"
             label="排序权重"
@@ -111,17 +115,20 @@ const CreateProject: React.FC = () => {
             extra="数字越大越靠前，默认为0"
             initialValue={0}
           />
+
           <ProFormSwitch
             name="isActive"
             label="是否启用"
             initialValue={true}
           />
+
           <ProFormSwitch
             name="enableUpdate"
             label="启用更新打包功能"
             initialValue={false}
             extra="启用后可以执行项目更新打包命令"
           />
+
           <ProFormTextArea
             name="updateCommand"
             label="更新打包命令"
@@ -131,18 +138,21 @@ const CreateProject: React.FC = () => {
             }}
             extra="将在指定目录下执行此命令"
           />
+
           <ProFormText
             name="updateDirectory"
             label="更新打包目录"
             placeholder="请输入更新打包目录的绝对路径"
             extra="执行更新打包命令的工作目录"
           />
+
           <ProFormSwitch
             name="enableUpdateCode"
             label="启用更新代码功能"
             initialValue={false}
             extra="启用后可以执行项目更新代码命令"
           />
+
           <ProFormTextArea
             name="updateCodeCommand"
             label="更新代码命令"
@@ -152,35 +162,12 @@ const CreateProject: React.FC = () => {
             }}
             extra="将在指定目录下执行此命令"
           />
+
           <ProFormText
             name="updateCodeDirectory"
             label="更新代码目录"
             placeholder="请输入更新代码目录的绝对路径"
             extra="执行更新代码命令的工作目录"
-          />
-          <ProFormSwitch 
-            name="enablePackage" 
-            label="启用打包功能" 
-          />
-          <ProFormText 
-            name="packageCommand" 
-            label="打包命令" 
-          />
-          <ProFormText 
-            name="packageDirectory" 
-            label="打包目录" 
-          />
-          <ProFormSwitch 
-            name="enableClearCache" 
-            label="启用清缓存" 
-          />
-          <ProFormText 
-            name="clearCacheCommand" 
-            label="清缓存命令" 
-          />
-          <ProFormText 
-            name="clearCacheDirectory" 
-            label="清缓存目录" 
           />
         </ProForm>
       </Card>

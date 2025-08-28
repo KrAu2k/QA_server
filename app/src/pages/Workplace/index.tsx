@@ -11,13 +11,8 @@ import EditableLinkGroup from './components/EditableLinkGroup';
 import type { ActivitiesType } from './data'; 
 import { getActiveProjects, executeProjectUpdate, Project, getProjectUpdateLogs, getProjectUpdateCodeLogs, ProjectUpdateLog } from '@/services/system/project';
 import { useProjectWebSocket } from '@/hooks/useProjectWebSocket';
-import { DeleteOutlined, MobileOutlined} from '@ant-design/icons';
-import { executeProjectClearCache } from '@/services/system/project';
 import useStyles from './style.style';
 dayjs.extend(relativeTime);
-
-import { AndroidOutlined } from '@ant-design/icons';
-import { executeProjectPackage } from '@/services/system/project';
  
 const MAX_LOG_LENGTH = 20000; // 日志最大长度，防止浏览器卡顿
 
@@ -100,11 +95,6 @@ const Workplace: FC = () => {
   // 项目更新代码日志状态
   const [projectCodeLogs, setProjectCodeLogs] = useState<Record<string, any[]>>({});
   const [projectCodeStatuses, setProjectCodeStatuses] = useState<Record<string, string>>({});
-
-  // 项目打包状态_new
-  const [projectPackageStatuses, setProjectPackageStatuses] = useState<Record<string, 'idle'|'updating'>>({});
-  const [isExecutingPackage, setIsExecutingPackage] = useState(false);
-
 
   // 获取项目更新日志
   const fetchProjectLogs = useCallback(async (projectId: string) => {
@@ -448,49 +438,6 @@ const Workplace: FC = () => {
     executeUpdateCode(project.id, currentUser?.employeeNo, currentUser?.name);
   };
   
-
-
-
-  //new 处理项目打包
-  const handleProjectPackage = async (project: Project, e?: React.MouseEvent) => {
-    e?.stopPropagation?.();
-    const status = projectPackageStatuses[project.id] || project.currentPackageStatus;
-    if (status === 'updating' || isExecutingPackage) return;
-    setIsExecutingPackage(true);
-    setProjectPackageStatuses(prev => ({ ...prev, [project.id]: 'updating' }));
-    try {
-      await executeProjectPackage(project.id);
-      // 日志 & 状态通过现有 WS 事件推过来（和“更新”一致），前端原有订阅会显示
-    } catch (err:any) {
-      message.error(`触发打 APK 失败：${err?.message || '未知错误'}`);
-      setProjectPackageStatuses(prev => ({ ...prev, [project.id]: 'idle' }));
-    } finally {
-      setIsExecutingPackage(false);
-    }
-  };
-
-const [projectClearStatuses, setProjectClearStatuses] = useState<Record<string, 'idle'|'updating'>>({});
-const [isExecutingClear, setIsExecutingClear] = useState(false);
-//new 处理项目清缓存
-const handleProjectClear = async (project: Project, e?: React.MouseEvent) => {
-  e?.stopPropagation?.();
-  const status = projectClearStatuses[project.id] || project.currentClearCacheStatus;
-  if (status === 'updating' || isExecutingClear) return;
-  setIsExecutingClear(true);
-  setProjectClearStatuses(prev => ({ ...prev, [project.id]: 'updating' }));
-  try {
-    await executeProjectClearCache(project.id);
-  } catch (err:any) {
-    message.error(`触发清缓存失败：${err?.message || '未知错误'}`);
-    setProjectClearStatuses(prev => ({ ...prev, [project.id]: 'idle' }));
-  } finally {
-    setIsExecutingClear(false);
-  }
-};
-
-
-
-
   const renderActivities = (item: ActivitiesType) => {
     const events = item.template.split(/@\{([^{}]*)\}/gi).map((key) => {
       if (item[key as keyof ActivitiesType]) {
@@ -1053,66 +1000,7 @@ const handleProjectClear = async (project: Project, e?: React.MouseEvent) => {
                             >
                               {(projectCodeStatuses[project.id] || project.currentUpdateCodeStatus) === 'updating' ? '更新代码中' : '更新代码'}
                             </Button>
-                            
                           )}
-
-                          
-{project.enablePackage && (
-  <Button
-    size="small"
-    icon={<MobileOutlined
-      spin={(projectPackageStatuses[project.id] || project.currentPackageStatus) === 'updating' || isExecutingPackage}
-      style={{ fontSize: '14px' }}
-    />}
-    onClick={(e) => handleProjectPackage(project, e)}
-    disabled={(projectPackageStatuses[project.id] || project.currentPackageStatus) === 'updating' || isExecutingPackage}
-    loading={(projectPackageStatuses[project.id] || project.currentPackageStatus) === 'updating' || isExecutingPackage}
-    style={{
-      borderRadius: '6px',
-      fontWeight: '500',
-      fontSize: '12px',
-      height: '32px',
-      backgroundColor: (projectPackageStatuses[project.id] || project.currentPackageStatus) === 'updating' ? '#faad14' : '#722ed1',
-      borderColor:    (projectPackageStatuses[project.id] || project.currentPackageStatus) === 'updating' ? '#faad14' : '#722ed1',
-      color: 'white',
-      boxShadow: (projectPackageStatuses[project.id] || project.currentPackageStatus) === 'updating'
-        ? '0 2px 4px rgba(250, 173, 20, 0.2)'
-        : '0 2px 4px rgba(114, 46, 209, 0.2)',
-    }}
-  >
-    {(projectPackageStatuses[project.id] || project.currentPackageStatus) === 'updating' ? '打 APK 中' : '打 APK'}
-  </Button>
-)}
-
-
-{project.enableClearCache && (
-  <Button
-    size="small"
-    icon={<DeleteOutlined
-      spin={(projectClearStatuses[project.id] || project.currentClearCacheStatus) === 'updating' || isExecutingClear}
-      style={{ fontSize: '14px' }}
-    />}
-    onClick={(e) => handleProjectClear(project, e)}
-    disabled={(projectClearStatuses[project.id] || project.currentClearCacheStatus) === 'updating' || isExecutingClear}
-    loading={(projectClearStatuses[project.id] || project.currentClearCacheStatus) === 'updating' || isExecutingClear}
-    style={{
-      borderRadius: '6px',
-      fontWeight: '500',
-      fontSize: '12px',
-      height: '32px',
-      backgroundColor: (projectClearStatuses[project.id] || project.currentClearCacheStatus) === 'updating' ? '#faad14' : '#eb2f96',
-      borderColor:    (projectClearStatuses[project.id] || project.currentClearCacheStatus) === 'updating' ? '#faad14' : '#eb2f96',
-      color: 'white',
-      boxShadow: (projectClearStatuses[project.id] || project.currentClearCacheStatus) === 'updating'
-        ? '0 2px 4px rgba(250, 173, 20, 0.2)'
-        : '0 2px 4px rgba(235, 47, 150, 0.2)',
-    }}
-  >
-    {(projectClearStatuses[project.id] || project.currentClearCacheStatus) === 'updating' ? '清缓存中' : '清缓存'}
-  </Button>
-)}
-
-
                         </div>
                         <div style={{ 
                           fontSize: '11px', 

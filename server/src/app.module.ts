@@ -91,23 +91,23 @@ import { ConfigModule } from '@nestjs/config';
       synchronize: true,
     }),
     // BI数据库配置 - 使用 mysql_clear_password 认证
-    // TypeOrmModule.forRoot({
-    //   name: 'bi',
-    //   type: 'mysql',
-    //   host: process.env.BI_DB_HOST,
-    //   port: parseInt(process.env.BI_DB_PORT),
-    //   username: process.env.BI_DB_USERNAME,
-    //   password: process.env.BI_DB_PASSWORD,
-    //   database: process.env.BI_DB_NAME,
-    //   autoLoadEntities: true,
-    //   synchronize: false, // BI数据库通常设为false，避免意外修改结构
-    //   extra: {
-    //     authPlugins: {
-    //       mysql_clear_password: () => require('mysql2/lib/auth_plugins/mysql_clear_password')
-    //     }
-    //   },
-    //   charset: 'utf8mb4',
-    // }),
+    TypeOrmModule.forRoot({
+      name: 'bi',
+      type: 'mysql',
+      host: process.env.BI_DB_HOST,
+      port: parseInt(process.env.BI_DB_PORT),
+      username: process.env.BI_DB_USERNAME,
+      password: process.env.BI_DB_PASSWORD,
+      database: process.env.BI_DB_NAME,
+      autoLoadEntities: true,
+      synchronize: false, // BI数据库通常设为false，避免意外修改结构
+      extra: {
+        authPlugins: {
+          mysql_clear_password: () => require('mysql2/lib/auth_plugins/mysql_clear_password')
+        }
+      },
+      charset: 'utf8mb4',
+    }),
     UserModule,
     AuthModule,
     LogModule,

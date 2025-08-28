@@ -6,7 +6,7 @@ import {
   ConnectedSocket,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { Injectable ,Inject ,forwardRef} from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { ProjectService } from './project.service';
 
 @Injectable()
@@ -21,10 +21,7 @@ export class ProjectGateway {
   @WebSocketServer()
   server: Server;
 
-  constructor(
-    @Inject(forwardRef(() => ProjectService))
-    private readonly projectService: ProjectService,
-  ) {}
+  constructor(private readonly projectService: ProjectService) {}
 
   @SubscribeMessage('executeUpdate')
   async handleUpdateCommand(
@@ -217,89 +214,4 @@ export class ProjectGateway {
     client.leave(room);
     client.emit('leftRoom', { room });
   }
-
-  
-
-
-
-
-  @SubscribeMessage('executePackage')
-  async handlePackageCommand(
-    @MessageBody() data: { projectId: string; userId?: string; username?: string },
-    @ConnectedSocket() client: Socket,
-  ) {
-    const { projectId, userId, username } = data;
-    console.log('📦 [WebSocket] 收到打 APK 命令:', { projectId, userId: userId || '未提供', username: username || '未提供', clientId: client.id });
-
-    try {
-      const project = await this.projectService.findOne(projectId);
-      if (!project) {
-        client.emit('updateError', { message: '项目不存在' }); // 复用错误事件名
-        return;
-      }
-      if (!project.enablePackage) {
-        client.emit('updateError', { message: '项目未启用打 APK 功能' });
-        return;
-      }
-      if (!project.packageCommand) {
-        client.emit('updateError', { message: '项目未配置打 APK 命令' });
-        return;
-      }
-
-      // ★ 复用“更新”的输出事件名，前端无需改订阅
-      await this.projectService.executePackageWithRealTimeOutput(
-        projectId,
-        (data: string) => client.emit('updateOutput', { data }),
-        (error: string) => client.emit('updateError', { message: error }),
-        () => client.emit('updateComplete', { message: '打 APK 完成' }),
-        userId,
-        username,
-      );
-
-    } catch (error: any) {
-      console.error('💥 [异常] 打 APK 发生异常:', { projectId, error: error?.message, clientId: client.id });
-      client.emit('updateError', { message: error?.message || '打 APK 时发生错误' });
-    }
-  }
-
-  @SubscribeMessage('executeClearCache')
-  async handleClearCacheCommand(
-    @MessageBody() data: { projectId: string; userId?: string; username?: string },
-    @ConnectedSocket() client: Socket,
-  ) {
-    const { projectId, userId, username } = data;
-    console.log('🧹 [WebSocket] 收到清缓存命令:', { projectId, userId: userId || '未提供', username: username || '未提供', clientId: client.id });
-
-    try {
-      const project = await this.projectService.findOne(projectId);
-      if (!project) {
-        client.emit('updateError', { message: '项目不存在' });
-        return;
-      }
-      if (!project.enableClearCache) {
-        client.emit('updateError', { message: '项目未启用清缓存功能' });
-        return;
-      }
-      if (!project.clearCacheCommand) {
-        client.emit('updateError', { message: '项目未配置清缓存命令' });
-        return;
-      }
-
-      await this.projectService.executeClearCacheWithRealTimeOutput(
-        projectId,
-        (data: string) => client.emit('updateOutput', { data }),      // 同事件名
-        (error: string) => client.emit('updateError', { message: error }),
-        () => client.emit('updateComplete', { message: '清缓存完成' }),
-        userId,
-        username,
-      );
-
-    } catch (error: any) {
-      console.error('💥 [异常] 清缓存发生异常:', { projectId, error: error?.message, clientId: client.id });
-      client.emit('updateError', { message: error?.message || '清缓存时发生错误' });
-    }
-  }
-
-
-
 }
